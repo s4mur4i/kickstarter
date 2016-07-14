@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, abort
-from flask.ext.migrate import Migrate, MigrateCommand
-from flask.ext.script import Manager
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate, MigrateCommand
+from flask_script import Manager
+from flask_mail import Mail
+from flask_sqlalchemy import SQLAlchemy
+from flask_security import Security, SQLAlchemyUserDatastore
 import datetime
 from cloudinary import uploader
 
@@ -14,11 +16,16 @@ migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
 from kickstarter.models import *
+from forms import ExtendedRegisterForm
 
+user_datastore = SQLAlchemyUserDatastore(db, Member, Role)
+security = Security(app, user_datastore, register_form=ExtendedRegisterForm)
 
+mail = Mail(app)
 @app.route('/')
 def hello():
-    return render_template("index.html")
+    projects = db.session.query(Project).order_by(Project.time_created.desc()).limit(15)
+    return render_template("index.html", projects=projects)
 
 
 @app.route('/projects/create/', methods=['GET', 'POST'])
@@ -73,3 +80,17 @@ def pledge(project_id):
         db.session.add(new_pledge)
         db.session.commit()
         return redirect(url_for('project_detail', project_id=project_id))
+
+
+@app.route('/search/')
+def search():
+    query = request.args.get('q') or ""
+    projects = db.session.query(Project).filter(
+        Project.name.ilike('%' + query + '%') |
+        Project.short_description.ilike('%' + query + '%') |
+        Project.long_description.ilike('%' + query + '%')
+    ).all()
+
+    project_count = len(projects)
+
+    return render_template('search.html', query_text=query, projects=projects, project_count=project_count)

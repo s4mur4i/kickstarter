@@ -1,15 +1,30 @@
-from kickstarter import db
+from kickstarter import db, app
+from flask.ext.security import RoleMixin, UserMixin
 from sqlalchemy.sql import func
 import datetime
 import cloudinary.utils
 
+roles_members = db.Table('roles_members', db.Column('member_id', db.INTEGER(), db.ForeignKey('member.id')),
+                         db.Column('role_id', db.INTEGER(), db.ForeignKey('role.id')))
 
-class Member(db.Model):
+
+class Member(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(255))
+    active = db.Column(db.String(255))
+    confirmed_at = db.Column(db.DATETIME())
     project = db.relationship('Project', backref='creator')
     pledges = db.relationship('Pledge', backref='pledger', foreign_keys='Pledge.member_id')
+    roles = db.relationship('Role', secondary=roles_members, backref=db.backref('members', lazy='dynamic'))
+
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.INTEGER(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
 
 
 class Project(db.Model):
@@ -46,6 +61,11 @@ class Project(db.Model):
     @property
     def image_path(self):
         return cloudinary.utils.cloudinary_url(self.image_filename)[0]
+
+    @property
+    def percentage_funded(self):
+        return int(self.total_pledges * 100 / self.goal_amount)
+
 
 class Pledge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
