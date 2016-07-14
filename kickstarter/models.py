@@ -1,6 +1,7 @@
 from kickstarter import db
 from sqlalchemy.sql import func
 import datetime
+import cloudinary.utils
 
 
 class Member(db.Model):
@@ -15,6 +16,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=False)
     name = db.Column(db.String(100))
+    image_filename = db.Column(db.String(200))
     short_description = db.Column(db.Text)
     long_description = db.Column(db.Text)
     goal_amount = db.Column(db.Integer)
@@ -41,6 +43,9 @@ class Project(db.Model):
 
         return num_days_left
 
+    @property
+    def image_path(self):
+        return cloudinary.utils.cloudinary_url(self.image_filename)[0]
 
 class Pledge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
