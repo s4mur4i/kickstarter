@@ -22,8 +22,36 @@
                 <img class="img-responsive center-block" src="{{ project.image_path }}" width="680" height="500">
             </div>
 
-            <div>
+            <div class="panel">
                 <p class="text-center">{{ project.long_description }}</p>
+            </div>
+
+            <div class="panel">
+
+                <div id="disqus_thread"></div>
+                <script>
+                    /**
+                     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+                     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+                     */
+
+                    var disqus_config = function () {
+                        this.page.url = "{{ request.base_url }}";  // Replace PAGE_URL with your page's canonical URL variable
+                        this.page.identifier = {{ project.id }}; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+                    };
+
+                    (function () {  // DON'T EDIT BELOW THIS LINE
+                        var d = document, s = d.createElement('script');
+
+                        s.src = '//kickstarter-demo.disqus.com/embed.js';
+
+                        s.setAttribute('data-timestamp', +new Date());
+                        (d.head || d.body).appendChild(s);
+                    })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+                                                                  rel="nofollow">comments powered by Disqus.</a>
+                </noscript>
             </div>
         </div>
 
@@ -45,6 +73,24 @@
             <div class="panel">
                 <a href="{{ url_for('pledge', project_id=project.id) }}" class="btn btn-kickstarter">Pledge Now</a>
             </div>
+
+            <div class="panel">
+                <h3>Pledge Rewards</h3>
+            </div>
+            {% for reward in project.rewards %}
+                <div class="panel search-card">
+                    <p class="text-uppercase"><strong>{{ reward.title }}</strong></p>
+                    <p><span class="project-vitals"> ${{ reward.minimum_pledge_amount }} </span> or more</p>
+                    <p><span class="project-vitals"> {{ reward.num_pledges }} </span> pledges so far </p>
+                    <p>{{ reward.description }}</p>
+                </div>
+
+            {% endfor %}
+            <div class="panel">
+                <a href="{{ url_for('stats', project_id=project.id) }}"><i class="glyphicon glyphicon-stats"></i>View
+                    Stats </a>
+            </div>
+
         </div>
     </div>
 {% endblock %}

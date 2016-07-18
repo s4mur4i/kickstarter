@@ -1,18 +1,63 @@
 body {
-  padding-top: 70px;
-  padding-bottom: 30px;
+	padding-top: 70px;
+	padding-bottom: 30px;
 }
 
-.theme-dropdown .dropdown-menu {
-  position: static;
-  display: block;
-  margin-bottom: 20px;
+.project-vitals {
+	font-size: 2em;
 }
 
-.theme-showcase > p > .btn {
-  margin: 5px 0;
+.project-vitals-stats {
+	font-size: 4em;
 }
 
-.theme-showcase .navbar .container {
-  width: auto;
+.search-card {
+	padding: 15px;
+	border: 1px solid #000;
+	height: 415px;
+	margin-bottom: 40px;
+}
+
+.search-description {
+	height: 350px;
+}
+
+.search-thumbnail {
+	height: 200px;
+}
+
+.btn-kickstarter {
+	background-color: #2bde73;
+	color: #FFF;
+	font-weight: bold;
+}
+
+.btn-kickstarter:hover {
+	background-color: #19b858;
+	color: #FFF;
+}
+
+.reward-card {
+	padding: 5px;
+	border: 1px solid #000;
+	margin-bottom: 40px;
+}
+
+/* Bootstrap Overrides */
+.navbar-default .navbar-brand {
+	color: #2bde73;
+	font-weight: bold;
+}
+
+a {
+	color: #2bde73;
+}
+
+a:hover {
+	color: #19b858;
+	text-decoration: none;
+}
+
+.navbar-default .navbar-brand:focus, .navbar-default .navbar-brand:hover {
+	color: #19b858;
 }
