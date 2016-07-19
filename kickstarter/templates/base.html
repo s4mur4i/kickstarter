@@ -4,39 +4,68 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="../../favicon.ico">
 
     <title>Kickstarter | {% block subtitle %} {% endblock %}</title>
 
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"
-          integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"
+          integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ=="
+          crossorigin="anonymous">
 
     <!-- Custom styles for this template -->
     <link href="/static/theme.css" rel="stylesheet">
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
     {% block head_javascript %}
     {% endblock head_javascript %}
+    <!-- start Mixpanel -->
+    <script type="text/javascript">(function (e, b) {
+        if (!b.__SV) {
+            var a, f, i, g;
+            window.mixpanel = b;
+            b._i = [];
+            b.init = function (a, e, d) {
+                function f(b, h) {
+                    var a = h.split(".");
+                    2 == a.length && (b = b[a[0]], h = a[1]);
+                    b[h] = function () {
+                        b.push([h].concat(Array.prototype.slice.call(arguments, 0)))
+                    }
+                }
+
+                var c = b;
+                "undefined" !== typeof d ? c = b[d] = [] : d = "mixpanel";
+                c.people = c.people || [];
+                c.toString = function (b) {
+                    var a = "mixpanel";
+                    "mixpanel" !== d && (a += "." + d);
+                    b || (a += " (stub)");
+                    return a
+                };
+                c.people.toString = function () {
+                    return c.toString(1) + ".people (stub)"
+                };
+                i = "disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+                for (g = 0; g < i.length; g++)f(c, i[g]);
+                b._i.push([a, e, d])
+            };
+            b.__SV = 1.2;
+            a = e.createElement("script");
+            a.type = "text/javascript";
+            a.async = !0;
+            a.src = "undefined" !== typeof MIXPANEL_CUSTOM_LIB_URL ? MIXPANEL_CUSTOM_LIB_URL : "file:" === e.location.protocol && "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//) ? "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js" : "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+            f = e.getElementsByTagName("script")[0];
+            f.parentNode.insertBefore(a, f)
+        }
+    })(document, window.mixpanel || []);
+    mixpanel.init("{{ config['PROJECT_TOKEN'] }}");</script><!-- end Mixpanel -->
+    {% if current_user.is_authenticated %}
+        mixpanel.identify({{ current_user.id }})
+    {% endif %}
 </head>
 
 <body role="document">
 
 <!-- Fixed navbar -->
-<nav class="navbar navbar-inverse navbar-fixed-top">
+<nav class="navbar navbar-default navbar-fixed-top">
     <div class="container">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
@@ -46,17 +75,25 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Kickstarter</a>
+            <a class="navbar-brand" href="/">Kickstarter</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <li {% if active_page == "index" %}class="active" {% endif %}><a href="/">Home</a></li>
+                <li {% if active_page == 'index' %} class="active" {% endif %}><a href="/">Home</a></li>
+                <li class="dropdown">
+                    <a href="#" data-toggle="dropdown"> Explore<span class="caret"></span> </a>
+                    <ul class="dropdown-menu">
+                        {% for category in categories %}
+                            <li><a href="{{ url_for('search',category_slug=category.slug) }}">{{ category.name }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
                 {% if current_user.is_authenticated %}
-                    <li {% if active_page == "create" %}class="active" {% endif %}><a href="{{ url_for('create') }}">Create
-                        a project</a></li>
+                    <li {% if active_page == 'create' %} class="active" {% endif %}><a href="{{ url_for('create') }}">Create
+                        a Project</a></li>
                 {% endif %}
             </ul>
-
             {% if current_user.is_authenticated %}
                 <ul class="nav navbar-nav navbar-right">
                     <li><a href="{{ url_for_security('logout') }}">Logout</a></li>
@@ -64,10 +101,9 @@
                 <p class="navbar-text navbar-right">Welcome, {{ current_user.first_name }}!</p>
             {% else %}
                 <ul class="nav navbar-nav navbar-right">
-                    <li {% if active_page =='login' %} class="active" {% endif %}><a
-                            href="{{ url_for_security('login') }}">Login</a>
-                    </li>
-                    <li {% if active_page =='register' %} class="active" {% endif %}><a
+                    <li {% if active_page == 'login' %} class="active" {% endif %}><a
+                            href="{{ url_for_security('login') }}">Login</a></li>
+                    <li {% if active_page == 'register' %} class="active" {% endif %}><a
                             href="{{ url_for_security('register') }}">Register</a></li>
                 </ul>
             {% endif %}
@@ -82,23 +118,28 @@
 </nav>
 
 <div class="container theme-showcase" role="main">
+
     {% block content %}
     {% endblock content %}
 
     <hr>
+
     <footer>
-        <p>Legal text and other</p>
+        <p>&copy; Kickstarter 2016</p>
     </footer>
+
 </div> <!-- /container -->
+
 
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<!--<script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script> -->
-<!-- Latest compiled and minified JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-        integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"
+        integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ=="
         crossorigin="anonymous"></script>
+
+{% block footer_javascript %}
+{% endblock footer_javascript %}
 </body>
 </html>

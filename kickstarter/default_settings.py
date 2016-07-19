@@ -15,9 +15,12 @@ MAIL_SERVER = "smtp.sendgrid.net"
 MAIL_PORT = "2525"
 MAIL_USERNAME = "kickstarter-demo"
 MAIL_PASSWORD = "password1"
+STRIPE_API_KEY = "sk_test_qLtfhTOgpXiAdk306NJBr8rk"
+STRIPE_PUBLISHABLE_KEY = "pk_test_CIweTbhgaGOp2IhCRF5YG6Jk"
+PROJECT_TOKEN = "2e8fa7f5a2cb84cf9d3fda1394150b47"
 
 cloudinary.config(
-  cloud_name="s4mur4i",
-  api_key="771132351999124",
-  api_secret="NiLiuCXH0TmCwNACnQG5h0VK5_o"
+    cloud_name="s4mur4i",
+    api_key="771132351999124",
+    api_secret="NiLiuCXH0TmCwNACnQG5h0VK5_o"
 )

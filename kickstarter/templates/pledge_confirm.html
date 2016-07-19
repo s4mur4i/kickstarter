@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% set active_page = "pledge" %}
+
+{% block subtitle %}
+    Pledge Confirmation
+{% endblock %}
+
+
+{% block content %}
+
+    <div>
+        <h1 class="text-center"> Confirm your pledge to {{ project.name }} </h1>
+    </div>
+
+    <div class="panel reward-card">
+        <p>
+            <strong class="text-uppercase">{{ reward.title }} </strong>
+        </p>
+        <p>{{ reward.description }}</p>
+    </div>
+
+    <p><strong> You will be charged ${{ pledge_amount }} for this pledge. </strong></p>
+
+    <form id="pledge_confirm_form" method="POST" action="{{ url_for('pledge_confirm', project_id=project.id) }}">
+        <div class="form-group">
+            <input type="hidden" id="stripe_token" name="stripe_token" value="">
+            <button id="submit-pledge" class="btn btn-punchstarter">Pledge</button>
+        </div>
+    </form>
+
+
+{% endblock content %}
+
+{% block footer_javascript %}
+    <script src="https://checkout.stripe.com/checkout.js"></script>
+
+    <script>
+        var handler = StripeCheckout.configure({
+            key: '{{ config["STRIPE_PUBLISHABLE_KEY"] }}',
+            image: '/static/kickstarter.jpg',
+            locale: 'auto',
+            email: '{{ current_user.email }}',
+            token: function (token) {
+                // Triggered when user submits payment info successfully
+                $('#stripe_token').val(token.id);
+                $('#pledge_confirm_form').submit();
+            }
+        });
+
+        $('#submit-pledge').on('click', function (e) {
+            // Open Checkout with further options
+            handler.open({
+                        name: 'Kickstarter',
+                        description: 'Pledge to {{ project.name }}',
+                        amount: {{ pledge_amount }} * 100
+        })
+            ;
+            mixpanel.track('Opened Payment Window');
+            e.preventDefault();
+        });
+
+        // Close Checkout on page navigation
+        $(window).on('popstate', function () {
+            handler.close();
+        });
+    </script>
+
+{% endblock footer_javascript %}

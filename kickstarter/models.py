@@ -42,6 +42,7 @@ class Project(db.Model):
     time_end = db.Column(db.DateTime(timezone=False), nullable=False)
     pledges = db.relationship('Pledge', backref='project', lazy='dynamic', foreign_keys='Pledge.project_id')
     rewards = db.relationship('Reward', backref='project', lazy='dynamic', foreign_keys='Reward.project_id')
+    category_id = db.Column(db.INTEGER, db.ForeignKey('category.id'), nullable=True)
 
     @property
     def total_pledges(self):
@@ -116,6 +117,12 @@ class Project(db.Model):
 
         return ret
 
+
+class Category(db.Model):
+    id = db.Column(db.INTEGER, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    slug = db.Column(db.String(64), nullable=False)
+    project = db.relationship('Project', backref='category', lazy='dynamic', foreign_keys='Project.category_id')
 
 class Pledge(db.Model):
     id = db.Column(db.Integer, primary_key=True)

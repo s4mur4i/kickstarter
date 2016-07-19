@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, abort, flash
+from flask import Flask, render_template, request, redirect, url_for, abort, flash, session
 from flask_migrate import Migrate, MigrateCommand
+from sqlalchemy.orm.exc import NoResultFound
 from flask_script import Manager
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
+from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user, user_registered
 import datetime
 from cloudinary import uploader
 
@@ -23,6 +24,26 @@ user_datastore = SQLAlchemyUserDatastore(db, Member, Role)
 security = Security(app, user_datastore, register_form=ExtendedRegisterForm)
 
 mail = Mail(app)
+import stripe
+
+stripe.api_key = app.config["STRIPE_API_KEY"]
+
+from mixpanel import Mixpanel
+
+mp = Mixpanel(app.config["PROJECT_TOKEN"])
+
+
+def mixpanel_register_new_user(sender, user, confirm_token, **extra):
+    mp.people_set(user.id, {'$first_name': user.first_name, '$last_name': user.last_name, '$email': user.email})
+
+
+user_registered.connect(mixpanel_register_new_user, app)
+
+
+@app.context_processor
+def navbar_context_processor():
+    categories = db.session.query(Category).all()
+    return dict(categories=categories)
 
 
 @app.route('/')
@@ -46,6 +67,7 @@ def create():
         uploaded_image = cloudinary.uploader.upload(cover_photo, crop="limit", width=680, height=550)
         image_filename = uploaded_image["public_id"]
         new_project = Project(member_id=current_user.id, name=request.form.get("project_name"),
+                              category_id=request.form.get("category_id"),
                               short_description=request.form.get("short_description"),
                               long_description=request.form.get("long_description"),
                               goal_amount=request.form.get("funding_goal"), time_start=now, time_end=time_end,
@@ -116,17 +138,60 @@ def pledge(project_id):
                 flash("You must pledge at least $1")
                 return redirect(url_for('pledge', project_id=project.id))
 
+        session['pledge_reward_id'] = reward_id
+        session['pledge_amount'] = amount
+        return redirect(url_for('pledge_confirm', project_id=project_id))
+
+
+@app.route('/projects/<int:project_id>/pledge/confirm/', methods=['GET', 'POST'])
+@login_required
+def pledge_confirm(project_id):
+    project = db.session.query(Project).get(project_id)
+    if project is None:
+        abort(404)
+
+    if request.method == "GET":
+
+        reward = None
+        if session['pledge_reward_id'] is not None:
+            reward = db.session.query(Reward).get(session['pledge_reward_id'])
+
+        return render_template('pledge_confirm.html',
+                               project=project,
+                               reward=reward,
+                               pledge_amount=session['pledge_amount']
+                               )
+
+    elif request.method == "POST":
+        stripe_token = request.form.get("stripe_token")
+
+        description = "$%s pledge to %s from %s %s." % (
+            session['pledge_amount'],
+            project.name,
+            current_user.first_name,
+            current_user.last_name
+        )
+        stripe.Charge.create(
+            amount=session['pledge_amount'] * 100,  # Amount in cents
+            currency="usd",
+            source=stripe_token,  # obtained with Stripe.js
+            description=description,
+        )
+
         new_pledge = Pledge(
             member_id=current_user.id,
-            project_id=project_id,
-            reward_id=reward_id,
-            amount=amount,
-            time_created=datetime.datetime.now()
-
+            project_id=project.id,
+            reward_id=session['pledge_reward_id'],
+            amount=session['pledge_amount'],
+            time_created=datetime.datetime.now(),
         )
         db.session.add(new_pledge)
         db.session.commit()
-        return redirect(url_for('project_detail', project_id=project_id))
+        mp.track(current_user.id, 'Made Pledge', {'Amount': session['pledge_amount']})
+        session['pledge_reward_id'] = None
+        session['pledge_amount'] = None
+
+        return redirect(url_for('project_detail', project_id=project.id))
 
 
 @app.route('/projects/<int:project_id>/stats/')
@@ -139,14 +204,25 @@ def stats(project_id):
 
 
 @app.route('/search/')
-def search():
+@app.route('/search/category/<category_slug>')
+def search(category_slug=None):
     query = request.args.get('q') or ""
     projects = db.session.query(Project).filter(
         Project.name.ilike('%' + query + '%') |
         Project.short_description.ilike('%' + query + '%') |
         Project.long_description.ilike('%' + query + '%')
-    ).all()
-
+    )
+    if category_slug:
+        projects = projects.filter(Category.id == Project.category_id).filter(Category.slug == category_slug)
+    projects = projects.all()
     project_count = len(projects)
 
-    return render_template('search.html', query_text=query, projects=projects, project_count=project_count)
+    if category_slug:
+        try:
+            category = db.session.query(Category).filter_by(slug=category_slug).one()
+            query_text = category.name
+        except NoResultFound:
+            query_text = category_slug
+    else:
+        query_text = query if query != "" else "all projects"
+    return render_template('search.html', query_text=query_text, projects=projects, project_count=project_count)
